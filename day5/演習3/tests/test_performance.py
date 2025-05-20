@@ -21,7 +21,7 @@ def test_model_inference_speed():
     # 推論は0.5秒以内に完了すべき
     assert inference_time < 0.5, f"推論に{inference_time:.4f}秒かかりました。0.5秒以内にすべきです。"
     
-    print(f"推論時間: {inference_time:.4f}秒")
+    print(f"推論時間 : {inference_time:.4f}秒")
 
 def test_model_memory_usage():
     """モデルのメモリ使用量をテストする"""

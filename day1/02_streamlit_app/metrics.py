@@ -1,4 +1,5 @@
 # metrics.py
+from nltk.featstruct import _trace_unify_fail
 import streamlit as st
 import nltk
 from janome.tokenizer import Tokenizer
@@ -34,15 +35,33 @@ def initialize_nltk():
     except Exception as e:
         st.error(f"NLTKデータのダウンロードに失敗しました: {e}")
 
+
+
+#冗長性
+def calculate_redundancy_score(answer):
+    words = re.findall(r'\w+', answer.lower())
+    if not words:
+        return 0.0
+    unique_words = set(words)
+    return 1 - len(unique_words) / len(words)
+
+#多様性
+def calculate_lexical_diversity(answer):
+    words = re.findall(r'\w+', answer.lower())
+    return len(set(words)) / len(words) if words else 0.0
+
+
 def calculate_metrics(answer, correct_answer):
     """回答と正解から評価指標を計算する"""
     word_count = 0
     bleu_score = 0.0
     similarity_score = 0.0
     relevance_score = 0.0
+    redundancy_score = 0.0
+    lexical_diversity = 0.0
 
     if not answer: # 回答がない場合は計算しない
-        return bleu_score, similarity_score, word_count, relevance_score
+        return bleu_score, similarity_score, word_count, relevance_score, redundancy_score, lexical_diversity
 
     # 単語数のカウント
     tokenizer = Tokenizer()
@@ -92,8 +111,21 @@ def calculate_metrics(answer, correct_answer):
         except Exception as e:
             # st.warning(f"関連性スコア計算エラー: {e}")
             relevance_score = 0.0 # エラー時は0
+        
+        try:
+            #冗長性
+            redundancy_score = calculate_redundancy_score(answer)
+        except Exception as e:
+            redundancy_score = 0.0 # エラー時は0
+        
+        try:
+            #多様性
+            lexical_diversity = calculate_lexical_diversity(answer)
+        except Exception as e:
+            lexical_diversity = 0.0 # エラー時は0
 
-    return bleu_score, similarity_score, word_count, relevance_score
+
+    return bleu_score, similarity_score, word_count, relevance_score, redundancy_score, lexical_diversity
 
 def get_metrics_descriptions():
     """評価指標の説明を返す"""
@@ -104,5 +136,7 @@ def get_metrics_descriptions():
         "類似度スコア (similarity_score)": "TF-IDFベクトルのコサイン類似度による、正解と回答の意味的な類似性 (0〜1の値)",
         "単語数 (word_count)": "回答に含まれる単語の数。情報量や詳細さの指標",
         "関連性スコア (relevance_score)": "正解と回答の共通単語の割合。トピックの関連性を表す (0〜1の値)",
-        "効率性スコア (efficiency_score)": "正確性を応答時間で割った値。高速で正確な回答ほど高スコア"
+        "効率性スコア (efficiency_score)": "正確性を応答時間で割った値。高速で正確な回答ほど高スコア",
+        "冗長性スコア (redundancy_score)": "回答内の語彙の繰り返し度合い。高すぎると冗長な表現と見なされる",
+        "多様性スコア (lexical_diversity)": "異なる単語の割合。語彙の豊かさを表す（高いほど多様）",
     }
